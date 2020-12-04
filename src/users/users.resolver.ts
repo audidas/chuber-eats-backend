@@ -6,6 +6,10 @@ import {
   CreateAccountInput,
   CreateAccountOutPut,
 } from './dtos/create-account.dto';
+import {
+  DeleteAccountInput,
+  DeleteAccountOutput,
+} from './dtos/delete-account.dto';
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 import { LoginInput, LoginOutPut } from './dtos/login.dto';
 import { UserProfileInput, UserProfileOutput } from './dtos/user-profile.dto';
@@ -69,6 +73,19 @@ export class UsersResolver {
       return { ok: true };
     } catch (error) {
       return { ok: false, error };
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Mutation(returns => DeleteAccountOutput)
+  async deleteAccount(
+    @AuthUser() authUser: User,
+    @Args('input') deleteAccountInput: DeleteAccountInput,
+  ): Promise<DeleteAccountOutput> {
+    try {
+      return this.userService.deleteAccount(authUser.id, deleteAccountInput);
+    } catch (error) {
+      return { ok: false, error: '사용자를 삭제하지 못했습니다' };
     }
   }
 }
