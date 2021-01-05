@@ -2,18 +2,15 @@
 
 The Backend of Chuber Eats Clone
 
-## User Entity
-- id
-- createdAt
-- updatedAt
+ - Edit Restaurant
+ - Delete Restaurant
 
-- email
-- password 
-- role(client|owner|delivery)
+ - See Categories
+ - See Restaurants by Category (pagination)
+ - See Restaurants (pagination)
+ - See Restaurant
 
-## User CRUD
-- Create Account
-- Log In
-- See Profile
-- Edit Profile
-- Verify Email
+ - Create Dish
+ - Edit Dish
+ - Delete Dish
+  

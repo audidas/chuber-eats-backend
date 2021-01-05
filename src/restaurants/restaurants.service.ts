@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
-import { CreateRestaurantDTO } from './dtos/create-restaurant.dto';
-import { UpdateRestaurantDTO } from './dtos/update-restaurant.dto';
+import {
+  CreateRestaurantInput,
+  CreateRestaurantOutput,
+} from './dtos/create-restaurant.dto';
+import { Category } from './entities/category.entity';
+
 import { Restaurant } from './entities/restaurant.entity';
 
 @Injectable()
@@ -10,21 +15,37 @@ export class RestaurantService {
   constructor(
     @InjectRepository(Restaurant)
     private readonly restaurantRepo: Repository<Restaurant>,
+    @InjectRepository(Category)
+    private readonly categoryRepo: Repository<Category>,
   ) {}
 
-  getAll(): Promise<Restaurant[]> {
-    return this.restaurantRepo.find();
-  }
+  async createRestaurant(
+    owner: User,
+    createRestaurantInput: CreateRestaurantInput,
+  ): Promise<CreateRestaurantOutput> {
+    try {
+      const newRestaurant = this.restaurantRepo.create(createRestaurantInput);
 
-  createRestaurant(
-    createRestaurantDTO: CreateRestaurantDTO,
-  ): Promise<Restaurant> {
-    const newRestaurant = this.restaurantRepo.create(createRestaurantDTO);
+      newRestaurant.owner = owner;
+      const categoryName = createRestaurantInput.categoryName
+        .trim()
+        .toLowerCase();
+      const categorySlug = categoryName.replace(/ /g, '-');
+      let category = await this.categoryRepo.findOne({
+        slug: categorySlug,
+        name: categoryName,
+      });
+      if (!category) {
+        category = await this.categoryRepo.save(
+          this.categoryRepo.create({ slug: categorySlug, name: categoryName }),
+        );
+      }
 
-    return this.restaurantRepo.save(newRestaurant);
-  }
-
-  updateRestaurant({ id, data }: UpdateRestaurantDTO) {
-    return this.restaurantRepo.update(id, { ...data });
+      newRestaurant.category = category;
+      await this.restaurantRepo.save(newRestaurant);
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, error };
+    }
   }
 }

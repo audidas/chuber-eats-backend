@@ -1,7 +1,8 @@
 import { UseGuards } from '@nestjs/common';
-import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { AuthUser } from 'src/auth/auth-user.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { Role } from 'src/auth/role.decorator';
 import {
   CreateAccountInput,
   CreateAccountOutPut,
@@ -13,6 +14,7 @@ import {
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 import { LoginInput, LoginOutPut } from './dtos/login.dto';
 import { UserProfileInput, UserProfileOutput } from './dtos/user-profile.dto';
+import { VerifyEmailInput, VerifyEmailOutput } from './dtos/verify-email.dto';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
 
@@ -21,71 +23,53 @@ export class UsersResolver {
   constructor(private readonly userService: UsersService) {}
 
   @Query(returns => User)
-  @UseGuards(AuthGuard)
+  @Role(['Any'])
   me(@AuthUser() authUser: User) {
     return authUser;
   }
 
   @Query(returns => UserProfileOutput)
-  @UseGuards(AuthGuard)
+  @Role(['Any'])
   async userProfile(
     @Args() userProfileInput: UserProfileInput,
   ): Promise<UserProfileOutput> {
-    try {
-      const user = await this.userService.findById(userProfileInput.userId);
-      if (!user) {
-        throw Error();
-      }
-      return { ok: Boolean(user), user };
-    } catch (error) {
-      return { ok: false, error: '사용자를 찾지 못했습니다' };
-    }
+    return await this.userService.findById(userProfileInput.userId);
   }
 
   @Mutation(returns => CreateAccountOutPut)
-  async createAccount(
+  createAccount(
     @Args('input') createAccountInput: CreateAccountInput,
   ): Promise<CreateAccountOutPut> {
-    try {
-      return await this.userService.createAccount(createAccountInput);
-    } catch (error) {
-      return { error, ok: false };
-    }
+    return this.userService.createAccount(createAccountInput);
   }
 
   @Mutation(returns => LoginOutPut)
-  async login(@Args('input') loginInput: LoginInput): Promise<LoginOutPut> {
-    try {
-      return await this.userService.login(loginInput);
-    } catch (error) {
-      return { ok: false, error };
-    }
+  login(@Args('input') loginInput: LoginInput): Promise<LoginOutPut> {
+    return this.userService.login(loginInput);
   }
 
-  @UseGuards(AuthGuard)
   @Mutation(returns => EditProfileOutput)
-  async editProfile(
+  @Role(['Any'])
+  editProfile(
     @AuthUser() authUser: User,
     @Args('input') editProfileInput: EditProfileInput,
   ): Promise<EditProfileOutput> {
-    try {
-      await this.userService.editProfile(authUser.id, editProfileInput);
-      return { ok: true };
-    } catch (error) {
-      return { ok: false, error };
-    }
+    return this.userService.editProfile(authUser.id, editProfileInput);
   }
 
-  @UseGuards(AuthGuard)
   @Mutation(returns => DeleteAccountOutput)
-  async deleteAccount(
+  @Role(['Any'])
+  deleteAccount(
     @AuthUser() authUser: User,
     @Args('input') deleteAccountInput: DeleteAccountInput,
   ): Promise<DeleteAccountOutput> {
-    try {
-      return this.userService.deleteAccount(authUser.id, deleteAccountInput);
-    } catch (error) {
-      return { ok: false, error: '사용자를 삭제하지 못했습니다' };
-    }
+    return this.userService.deleteAccount(authUser.id, deleteAccountInput);
+  }
+
+  @Mutation(returns => VerifyEmailOutput)
+  verifyEmail(
+    @Args('input') verifyEmailInput: VerifyEmailInput,
+  ): Promise<VerifyEmailOutput> {
+    return this.userService.verifyEmail(verifyEmailInput.code);
   }
 }
